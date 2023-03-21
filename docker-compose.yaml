@@ -1,0 +1,8 @@
+version: '3'
+services:
+  modcheck_bot:
+    build: .
+    image: modcheck/bot:1.0.0
+
+
+

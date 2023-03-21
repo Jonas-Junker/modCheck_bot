@@ -1,11 +1,12 @@
-import {client, model} from "../app";
-import {ChatUserstate} from "tmi.js";
+import {client} from "../app";
+import {model} from "../classes/Client";
 
-export const toxicityHandler = async (channel: any, tags: ChatUserstate, message: string, self: any) => {
+export const handleToxicity = async (channel: any, tags: any, message: string, self: any) => {
+    if (self) return;
+
     const predictions = await model.classify(message);
-    console.info('toxic check')
     for (const element of predictions) {
-        if(element.results[0].match){
+        if (element.results[0].match) {
             await client.say(channel, `Nicht so unfreundlich @${tags.username}`)
         }
     }

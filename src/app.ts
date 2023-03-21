@@ -1,47 +1,56 @@
 import dotenv from 'dotenv';
-import tmi, {ChatUserstate} from "tmi.js";
-import * as tf from '@tensorflow/tfjs';
-import * as toxicity from '@tensorflow-models/toxicity';
-import "./events/toxicity";
-import {modcheck} from "./commands/modcheck";
-import {commandHandler} from "./helper/commandHandler";
-import {toxicityHandler} from "./helper/toxicityHandler";
+import {ExtendedClient} from "./classes/Client";
+import {ExtendedDb} from "./classes/ExtendedDb";
+import mongoose from "mongoose";
+import {colours} from "./classes/colors";
+import ExpressApp from "./classes/ExpressApp";
 
 
+// ############# ENVIRONMENT #############
 dotenv.config();
 
-export const client = new tmi.Client({
-    options: { debug: true, messagesLogLevel: "info" },
-    connection: {
-        reconnect: true,
-        secure: true
-    },
-    identity: {
-        username: `${process.env.TWITCH_USERNAME}`,
-        password: `${process.env.TWITCH_OAUTH}`
-    },
-    channels: [`${process.env.TWITCH_CHANNEL}`]
-});
+// ############# DATABASE #############
+mongoose.set('bufferCommands', false);
+mongoose.set('strictQuery', true);
 
-// Tensorflow
-const treshold = 0.9;
-const labels = ['identity_attack', 'insult', 'threat'];
-
-export let model: any = async () => {
-    await tf.setBackend('gpu');
-    return await toxicity.load(treshold, labels);
+const mongoString = process.env.DATABASE_URL as string;
+const options = {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    family: 4,
+    useNewUrlParser: true,
 }
+export const db = new ExtendedDb();
 
-client.connect().catch(console.error);
+mongoose.connect(mongoString, options)
+const connection = mongoose.connection;
 
-client.on('message', async (channel, tags: ChatUserstate, message, self) => {
-    if (self) return;
+connection.on('error', (error) => {
+    console.error('Error connecting to MongoDB', error)
+    console.log(colours.reset)
+})
 
-    if (message.startsWith('!'))
-        commandHandler(channel, tags, message, self);
+connection.on('connected', () => {
+    console.log(colours.fg.green ,'Connected to MongoDB')
+    console.log(colours.reset)
+})
 
-    toxicityHandler(channel, tags, message, self);
 
-});
+export const client = new ExtendedClient()
+export const testServer = new ExpressApp({config: {}})
+
+
+
+
+// ############# APP START #############
+
+client.start().then(() => {
+    client.joinChannels();
+})
+
+
+
+
 
 

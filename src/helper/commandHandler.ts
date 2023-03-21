@@ -1,6 +1,8 @@
 import {modcheck} from "../commands/modcheck";
 
-export const commandHandler = (channel: any, tags: any, message: string, self: any) => {
+export const handleCommands = (channel: any, tags: any, message: string, self: any) => {
+    if (self) return;
+
     const commandString = message.toLowerCase().split(' ')
 
     switch (commandString[0]) {
